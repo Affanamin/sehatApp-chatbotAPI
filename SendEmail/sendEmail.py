@@ -87,7 +87,6 @@ class EmailSender:
                 ##################################################
                 self.text = self.msg.as_string()
                 self.text2 = "Working in this"
-                print("This is the diff.\n")
 
                 with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
                     
