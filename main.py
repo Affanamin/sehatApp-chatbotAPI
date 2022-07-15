@@ -17,8 +17,9 @@ app.config['CSV_FOLDER'] = CSV_FOLDER
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
-
+    # First interaction, request will drop here
     req = request.get_json(silent=True, force=True)
+    # Sending our request to another function, so that we can parse
     res = processRequest(req)
     r = make_response(res)
     r.headers['Content-Type'] = 'application/json'
@@ -26,86 +27,49 @@ def webhook():
 
 
 def processRequest(req):
+    # parsing our data, got from req
     sessionID = req.get('responseId')
     result = req.get("queryResult")
-    intent = result.get("intent").get('displayName')
+    outputContexts = result.get("outputContexts")
+    params = outputContexts[0].values()
 
-    if (intent == 'CourseSelection'):
-        parameters = result.get("parameters")
-        course_name = parameters.get("name")
-        cust_name = parameters.get("stuname")
-        cust_email = parameters.get("email")
+    paramsList = list(params)
+    impParams = paramsList[2]
 
-        #course_name = 'DataScienceMasters'
-        email_sender = EmailSender()
-        template = template_reader.TemplateReader()
-        email_message = template.read_course_template(course_name)
-        email_sender.send_email_to_student(cust_email, email_message)
+    # Got patient name, email, contact number, appointment date, day, dr nae from here.
+    patientName = impParams["patientName.original"]
+    patientEmail = impParams["patientEmail.original"]
+    patientContactNumb = impParams["patientNumber.original"]
+    
+    params001 = outputContexts[1].values()
+    paramsList001 = list(params001)
+    impParams001 = paramsList001[2]
 
-        fulfillmentText = "I have sent the desired course outline on the given email address. Enter 1 for main menu and 0 to exit the chat"
+    drName = impParams001["drName.original"]
+    dayAppointment = impParams001["date-period.original"]
+    timeAppointment = impParams001["date-time.original"]
+    
+    # Sending Email to our patient Starts from here
+    email_sender = EmailSender()
+    template = template_reader.TemplateReader()
+    
+    email_message = template.read_course_template(patientName,patientEmail,patientContactNumb,drName,dayAppointment,timeAppointment)
+    email_sender.send_email_to_student(patientEmail, email_message)
 
-        return {
-            "fulfillmentText": fulfillmentText
-        }
-    elif (intent == 'Help Desk'):
+    #Sending Email to support from here
+    emailMessageSupport = template.read_support_template(patientName,patientEmail,patientContactNumb,drName,dayAppointment,timeAppointment)
+    email_sender.send_email_to_support(emailMessageSupport )
+    
+    # Sending Fulfilment text from here
 
-        parameters = result.get("parameters")
-        cust_name = parameters.get("name")
-        cust_contactnumber = parameters.get("number")
-        #converted_cust_num = str(cust_contactnumber)
+    fulfillmentText = "I have sent all details regarding your appointment with " + drName + " on email: " + patientEmail+ ", Please Be on time, thanks "
+    return {"fulfillmentText": fulfillmentText}
 
-        cust_email = 'affanaminn@gmail.com'
-
-        email_sender = EmailSender()
-        template = template_reader.TemplateReader()
-        course_name = 'DS'
-        email_message = template.read_course_template(course_name)
-        #        email_sender.send_email_to_student(cust_email, email_message)
-        #print("Student name %s",cust_name)
-        #print("Student contact number %s", cust_contactnumber)
-        email_sender.send_email_to_support(cust_name,cust_contactnumber,email_message )
-
-        fulfillmentText = "Your Number and Name has been sent to the support team via email, you will be contacted shortly, Enter 1 for main menu and 0 to exit the chat, Thanks. !!!"
-
-        return {
-            "fulfillmentText": fulfillmentText
-        }
-    else:
-        return "nothing found"
+    
 
 @app.route('/',methods=['GET'])
 def homePage():
 	return render_template("index.html")
-
-
-# @app.route('/ShirtSizeMedium', methods=("POST", "GET"))
-# def ShirtSizeMedium():
-#     #if request.method == 'POST':
-#     try:
-#         intent = 'Shirts-size'
-#         cust_shirt_size = 'M'
-#         search_string = 'shirts'
-#         cat = 'men'
-
-
-#         data_scrapper_FMJ = DataCollection()
-#         #yayvo_Scrapped = data_scrapper_FMJ.FMJ_Scraped(intent, cust_shirt_size)
-#         yayvo_Scrapped = data_scrapper_FMJ.FMJ_Scraped(intent, search_string, cust_shirt_size, cat)
-#         newdf = yayvo_Scrapped[
-#             (yayvo_Scrapped['Size-Of-Product'] == 'S,M') | (yayvo_Scrapped['Size-Of-Product'] == 'S,M,L')]
-
-#         download_path = data_scrapper_FMJ.save_as_dataframe(newdf, fileName=search_string.replace("+", "_"))
-
-#         return render_template('review.html',
-#                                tables=[newdf.to_html(classes='data')],  # pass the df as html
-#                                titles=newdf.columns.values,  # pass headers of each cols
-#                                search_string=search_string,  # pass the search string
-#                                download_csv=download_path  # pass the download path for csv
-#                                )
-
-#     except Exception as e:
-#         print(e)
-#         return render_template("404.html")
 
 
 if __name__ == '__main__':
