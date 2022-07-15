@@ -1,4 +1,4 @@
-# AIchatbot
+# SehatAPP AIchatbot
 
 A Chatbot is a software or an agent or a service which simulates human conversation in natural language through messaging applications, websites, mobile phones, or telephone. They can be programmed to respond to simple keywords or prompts to complex discussions.
 A Chatbot has two different tasks at the core: analyze the request (identifying the intent of the user) and providing the response
